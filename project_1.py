@@ -1,5 +1,5 @@
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split
+
 import pandas as pd
 import torch.nn as nn
 import torch.optim as optim
@@ -35,9 +35,16 @@ class Net(nn.Module):
         return x
 
 dataset_path = "/Users/behnaz/Desktop/pytorch_projects/water_potability.csv"
-dataset_train = WaterDataset(dataset_path)
-dataloader_train = DataLoader(dataset_train, batch_size = 2, shuffle = True)
+dataset = WaterDataset(dataset_path)
+# Define the sizes of training and testing sets
+train_size = int(0.8 * len(dataset))
+test_size = len(dataset) - train_size
 
+dataset_train, dataset_test = random_split(dataset, [train_size, test_size])
+
+
+dataloader_train = DataLoader(dataset_train, batch_size = 2, shuffle = True)
+dataloader_test = DataLoader(dataset_test, batch_size = 2, shuffle = True)
 features, labels = next(iter(dataloader_train))
 print(f"Features: {features}, \nLabels: {labels}")
 

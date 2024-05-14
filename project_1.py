@@ -1,16 +1,29 @@
 from torch.utils.data import Dataset, DataLoader, random_split
 
+import numpy as np
 import pandas as pd
 import torch.nn as nn
 import torch.optim as optim
 from torchmetrics import Accuracy
 import torch
+import multiprocessing
 
+
+
+
+multiprocessing.freeze_support() 
 class WaterDataset(Dataset):
     def __init__(self, csv_path):
         super().__init__()
         df = pd.read_csv(csv_path)
-        self.data = df.to_numpy()
+        # drop instances with nan values
+        df = df.dropna()
+        # Normalize the columns
+        df.iloc[:, :-1] = (df.iloc[:, :-1] - df.iloc[:, :-1].mean(axis=0)) / df.iloc[:, :-1].std(axis=0)       
+        self.data = df.to_numpy().astype(np.float32)
+
+
+
     
     def __len__(self):
         return self.data.shape[0]
@@ -29,13 +42,17 @@ class Net(nn.Module):
         self.fc3 = nn.Linear(8,1)
     
     def forward(self, x):
+        
         x = nn.functional.relu(self.fc1(x))
         x = nn.functional.relu(self.fc2(x))
-        x = nn.functional.sigmioid(self.fc3(x))
+        x = nn.functional.sigmoid(self.fc3(x))
         return x
 
 dataset_path = "/Users/behnaz/Desktop/pytorch_projects/water_potability.csv"
 dataset = WaterDataset(dataset_path)
+
+
+
 # Define the sizes of training and testing sets
 train_size = int(0.8 * len(dataset))
 test_size = len(dataset) - train_size
@@ -43,29 +60,34 @@ test_size = len(dataset) - train_size
 dataset_train, dataset_test = random_split(dataset, [train_size, test_size])
 
 
-dataloader_train = DataLoader(dataset_train, batch_size = 2, shuffle = True)
-dataloader_test = DataLoader(dataset_test, batch_size = 2, shuffle = True)
+dataloader_train = DataLoader(dataset_train, batch_size = 2, shuffle = True, num_workers=0)
+dataloader_test = DataLoader(dataset_test, batch_size = 2, shuffle = True,  num_workers=0)
+# import pdb
+# pdb.set_trace()
 features, labels = next(iter(dataloader_train))
+
 print(f"Features: {features}, \nLabels: {labels}")
-
-
 
 # Optimizer, trainer and evaluation
 net = Net()
+# criterion = nn.CrossEntropyLoss()
 criterion = nn.BCELoss()
 optimizer = optim.SGD(net.parameters(), lr = 0.01)
 # optimizer = optim.Adagrad(net.parameter(), lr = 0.01)
 # optimizer = optim.RMSprop(net.parameter(), lr = 0.01)
 # optimizer = optim.Adam(net.parameter(), lr = 0.01)
 
+
+net.to(device='cpu')
+net.train()
 for epoch in range(1000):
+    
     for features, labels in dataloader_train:
         optimizer.zero_grad()
         outputs = net(features)
         loss = criterion(outputs, labels.view(-1, 1))
         loss.backward()
         optimizer.step()
-
 
 
 

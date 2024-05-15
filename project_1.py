@@ -97,6 +97,7 @@ with torch.no_grad():
     for features, labels in dataloader_test:
         outputs =net(features)
         pred = (outputs>=0.5).float()
+        acc(pred, labels.view(-1, 1))
 
 accuracy = acc.compute()
 print(f"Accuracy : {accuracy}")

@@ -8,7 +8,7 @@ from torchmetrics import Accuracy
 import torch
 import multiprocessing
 import torch.nn.init as init
-
+import torch.optim.lr_scheduler as lr_scheduler
 
 
 
@@ -23,9 +23,6 @@ class WaterDataset(Dataset):
         df.iloc[:, :-1] = (df.iloc[:, :-1] - df.iloc[:, :-1].mean(axis=0)) / df.iloc[:, :-1].std(axis=0)       
         self.data = df.to_numpy().astype(np.float32)
 
-
-
-    
     def __len__(self):
         return self.data.shape[0]
     
@@ -42,20 +39,20 @@ class Net(nn.Module):
         self.fc2 = nn.Linear(16,8)
         self.fc3 = nn.Linear(8,1)
         # Add two batch normalization layers
-        self.bn1 = nn.BatchNorm1d(16)
-        self.bn2 = nn.BatchNorm1d(8)
+        # self.bn1 = nn.BatchNorm1d(16)
+        # self.bn2 = nn.BatchNorm1d(8)
         
         # Apply He initialization
-        init.kaiming_uniform_(self.fc1.weight)
-        init.kaiming_uniform_(self.fc2.weight)
-        init.kaiming_uniform_(self.fc3.weight, nonlinearity = "sigmoid")
+        # init.kaiming_uniform_(self.fc1.weight)
+        # init.kaiming_uniform_(self.fc2.weight)
+        # init.kaiming_uniform_(self.fc3.weight, nonlinearity = "sigmoid")
     
     def forward(self, x):
         x = self.fc1(x)
-        x = self.bn1(x)
+        # x = self.bn1(x)
         x = nn.functional.elu(x)
         x = self.fc2(x)
-        x = self.bn2(x)
+        # x = self.bn2(x)
         x = nn.functional.elu(x)
         x = nn.functional.sigmoid(self.fc3(x))
         return x
@@ -88,7 +85,7 @@ optimizer = optim.SGD(net.parameters(), lr = 0.01)
 # optimizer = optim.Adagrad(net.parameter(), lr = 0.01)
 # optimizer = optim.RMSprop(net.parameter(), lr = 0.01)
 # optimizer = optim.Adam(net.parameter(), lr = 0.01)
-
+scheduler = lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.5, total_iters=30)
 
 net.to(device='cpu')
 net.train()

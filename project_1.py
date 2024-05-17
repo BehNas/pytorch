@@ -41,15 +41,22 @@ class Net(nn.Module):
         self.fc1 = nn.Linear(9, 16)
         self.fc2 = nn.Linear(16,8)
         self.fc3 = nn.Linear(8,1)
+        # Add two batch normalization layers
+        self.bn1 = nn.BatchNorm1d(16)
+        self.bn2 = nn.BatchNorm1d(8)
+        
         # Apply He initialization
         init.kaiming_uniform_(self.fc1.weight)
         init.kaiming_uniform_(self.fc2.weight)
         init.kaiming_uniform_(self.fc3.weight, nonlinearity = "sigmoid")
     
     def forward(self, x):
-        
-        x = nn.functional.relu(self.fc1(x))
-        x = nn.functional.relu(self.fc2(x))
+        x = self.fc1(x)
+        x = self.bn1(x)
+        x = nn.functional.elu(x)
+        x = self.fc2(x)
+        x = self.bn2(x)
+        x = nn.functional.elu(x)
         x = nn.functional.sigmoid(self.fc3(x))
         return x
 
